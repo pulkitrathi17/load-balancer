@@ -19,12 +19,15 @@ public class LoadBalancer {
         lbServer.setConnectors(new Connector[] {connector});
 
         ServletHandler servletHandler = new ServletHandler();
+        servletHandler.addServletWithMapping(ForwardingServlet.class, "/*");
         lbServer.setHandler(servletHandler);
-
         lbServer.start();
     }
 
     public void stop() throws Exception {
+        for (Connector connector : lbServer.getConnectors()) {
+            connector.stop();
+        }
         lbServer.stop();
     }
 }

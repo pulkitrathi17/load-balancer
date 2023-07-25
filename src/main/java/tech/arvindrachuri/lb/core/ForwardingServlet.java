@@ -1,30 +1,26 @@
 package tech.arvindrachuri.lb.core;
 
+import com.google.inject.Inject;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Slf4j
+@WebServlet("/*")
 public class ForwardingServlet extends HttpServlet {
-    private static final List<Backend> backendSet = new ArrayList<>();
 
-    public static void register(Backend backend) {
-        backendSet.add(backend);
-    }
+    private final BackendConfiguration configuration;
 
-    public static void unregister(Backend backend) {
-        backendSet.remove(backend);
+    @Inject
+    public ForwardingServlet(BackendConfiguration config) {
+        this.configuration = config;
     }
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) {
-        Backend backend = backendSet.get(0);
-        backendSet.remove(0);
-        backendSet.add(backend);
+        Backend backend = configuration.getBackend(request);
 
         try {
             backend.forward(request, response);

@@ -10,6 +10,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import tech.arvindrachuri.lb.config.LoadBalancerConfig;
 
 @Slf4j
 public class LoadBalancer {
@@ -21,10 +22,12 @@ public class LoadBalancer {
     @Setter Integer maxThreads;
     @Setter Integer minThreads;
 
+    private final LoadBalancerConfig config;
+
     @Inject
-    public LoadBalancer(ForwardingServlet servlet) {
-        log.info("Setting servlet {}", servlet.getServletInfo());
+    public LoadBalancer(ForwardingServlet servlet, LoadBalancerConfig config) {
         this.servlet = servlet;
+        this.config = config;
     }
 
     public void start() throws Exception {
@@ -33,7 +36,8 @@ public class LoadBalancer {
         ThreadPool threadPool = new ExecutorThreadPool(maxThreads, minThreads);
         lbServer = new Server(threadPool);
         ServerConnector connector = new ServerConnector(lbServer);
-        connector.setPort(8008);
+        log.info("Server listening on port {}", config.getPort());
+        connector.setPort(config.getPort());
         lbServer.setConnectors(new Connector[] {connector});
 
         ServletHandler servletHandler = new ServletHandler();
@@ -43,6 +47,8 @@ public class LoadBalancer {
         servletHandler.addServletWithMapping(servletHolder, "/*");
 
         lbServer.setHandler(servletHandler);
+
+        log.info("Using backend sets {}", config.getBackendSet());
 
         lbServer.start();
     }

@@ -53,7 +53,7 @@ public class RoundRobinStrategy implements RoutingStrategy {
                 return ipMap.get(clientIp);
             }
         }
-        idx = (idx+1)% backends.size();
+        idx = (idx + 1) % backends.size();
         Backend selectedBackend = backends.get(idx);
         ipMap.put(clientIp, selectedBackend);
         ttlMap.put(clientIp, System.currentTimeMillis());

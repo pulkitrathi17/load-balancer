@@ -17,7 +17,7 @@ public class RoundRobinStrategy implements RoutingStrategy {
         log.debug("Reinitialized the strategy");
     }
 
-    private Long idx = -1L;
+    private Integer idx = -1;
     private final Map<Integer, Backend> ipMap = new HashMap<>();
     private final Map<Integer, Long> ttlMap = new HashMap<>();
     private static final String[] POSSIBLE_IP_CONTAINING_HEADERS = {
@@ -53,11 +53,11 @@ public class RoundRobinStrategy implements RoutingStrategy {
                 return ipMap.get(clientIp);
             }
         }
-        if (idx > Integer.MAX_VALUE) idx = -1L;
-        idx++;
-        ipMap.put(clientIp, backends.get((idx.intValue()) % backends.size()));
+        idx = (idx+1)% backends.size();
+        Backend selectedBackend = backends.get(idx);
+        ipMap.put(clientIp, selectedBackend);
         ttlMap.put(clientIp, System.currentTimeMillis());
-        return backends.get((idx.intValue()) % backends.size());
+        return selectedBackend;
     }
 
     private Integer getIpAddress(HttpServletRequest request) {

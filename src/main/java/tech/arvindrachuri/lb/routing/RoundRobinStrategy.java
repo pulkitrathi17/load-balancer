@@ -3,6 +3,7 @@ package tech.arvindrachuri.lb.routing;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +13,13 @@ import tech.arvindrachuri.lb.core.Backend;
 @Slf4j
 public class RoundRobinStrategy implements RoutingStrategy {
 
+    public RoundRobinStrategy() {
+        log.debug("Reinitialized the strategy");
+    }
+
     private Long idx = -1L;
-    private Map<byte[], Backend> ipMap = new HashMap<>();
+    private final Map<Integer, Backend> ipMap = new HashMap<>();
+    private final Map<Integer, Long> ttlMap = new HashMap<>();
     private static final String[] POSSIBLE_IP_CONTAINING_HEADERS = {
         "X-Forwarded-For",
         "Proxy-Client-IP",
@@ -28,16 +34,33 @@ public class RoundRobinStrategy implements RoutingStrategy {
         "REMOTE_ADDR"
     };
 
+    private void mapContents() {
+
+        for (Map.Entry<Integer, Backend> ips : ipMap.entrySet()) {
+            log.debug("IP Map Client Ip {} is mapped to Backend {}", ips.getKey(), ips.getValue());
+        }
+    }
+
     @Override
     public Backend getBackendForRequest(HttpServletRequest request, List<Backend> backends) {
-        if (ipMap.containsKey(getIpAddress(request))) return ipMap.get(getIpAddress(request));
+        if (log.isDebugEnabled()) {
+            mapContents();
+        }
+        Integer clientIp = getIpAddress(request);
+        if (ipMap.containsKey(clientIp)) {
+            if ((System.currentTimeMillis() - ttlMap.get(clientIp)) < 5000L) {
+                ttlMap.put(clientIp, System.currentTimeMillis());
+                return ipMap.get(clientIp);
+            }
+        }
         if (idx > Integer.MAX_VALUE) idx = -1L;
         idx++;
-        ipMap.put(getIpAddress(request), backends.get((idx.intValue()) % backends.size()));
+        ipMap.put(clientIp, backends.get((idx.intValue()) % backends.size()));
+        ttlMap.put(clientIp, System.currentTimeMillis());
         return backends.get((idx.intValue()) % backends.size());
     }
 
-    private byte[] getIpAddress(HttpServletRequest request) {
+    private Integer getIpAddress(HttpServletRequest request) {
         String ip = "";
         for (String header : POSSIBLE_IP_CONTAINING_HEADERS) {
             ip = request.getHeader(header);
@@ -47,11 +70,20 @@ public class RoundRobinStrategy implements RoutingStrategy {
         }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
             ip = request.getRemoteAddr();
+        log.debug("Client IP address resolved to [{}]", ip);
         try {
-            return InetAddress.getByName(ip).getAddress();
+            log.debug("IP address as string {}", InetAddress.getByName(ip).getHostAddress());
+            return getIntAddress(InetAddress.getByName(ip).getAddress());
         } catch (UnknownHostException ex) {
             log.error("Unknown or Unparsable IP address [{}]", ip);
-            return new byte[] {};
+            return 0x0;
         }
+    }
+
+    private Integer getIntAddress(byte[] address) {
+        ByteBuffer intbuff = ByteBuffer.allocate(address.length);
+        intbuff.put(address);
+        intbuff.rewind();
+        return intbuff.getInt();
     }
 }

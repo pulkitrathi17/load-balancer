@@ -5,15 +5,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
 
 @Slf4j
 public class Backend {
     private final InetSocketAddress ipAddr;
     private final HttpClient forwarder = new HttpClient();
+
+    @Getter private final String backendName;
 
     public Backend(String hostAddr) throws UnknownHostException {
         String[] parts = hostAddr.split(":");
@@ -26,6 +30,7 @@ public class Backend {
         } catch (NumberFormatException ex) {
             throw new UnknownHostException(ex.getMessage());
         }
+        backendName = ipAddr.getHostString() + ":" + ipAddr.getPort();
     }
 
     public void forward(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -43,6 +48,11 @@ public class Backend {
                                                 headers.put(
                                                         headerName,
                                                         request.getHeader(headerName))));
+        if (request.getContentLengthLong() > 0) {
+            InputStreamRequestContent content =
+                    new InputStreamRequestContent(request.getInputStream());
+            fwdRequest.body(content);
+        }
         ContentResponse fwdResponse = fwdRequest.send();
         response.setStatus(fwdResponse.getStatus());
         fwdResponse
@@ -56,5 +66,10 @@ public class Backend {
                                         headerName, fwdResponse.getHeaders().get(headerName)));
         response.getOutputStream().write(fwdResponse.getContent());
         forwarder.stop();
+    }
+
+    @Override
+    public String toString() {
+        return backendName;
     }
 }

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import tech.arvindrachuri.lb.core.Backend;
+import tech.arvindrachuri.lb.core.BackendConfiguration;
 import tech.arvindrachuri.lb.core.ForwardingServlet;
 import tech.arvindrachuri.lb.core.LoadBalancer;
 import tech.arvindrachuri.lb.routing.RoundRobinStrategy;
@@ -30,6 +31,12 @@ public class LoadBalancerModule extends AbstractModule {
     @Provides
     public RoutingStrategy getRoutingStrategy() {
         return new RoundRobinStrategy();
+    }
+
+    @Singleton
+    @Provides
+    public BackendConfiguration getBackendConfiguration() {
+        return new BackendConfiguration(getRoutingStrategy(), getBackends());
     }
 
     @Provides

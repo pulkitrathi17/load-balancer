@@ -1,6 +1,7 @@
 package tech.arvindrachuri.lb.core;
 
 import com.google.inject.Inject;
+import java.util.Random;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.server.Connector;
@@ -16,6 +17,7 @@ import tech.arvindrachuri.lb.config.LoadBalancerConfig;
 public class LoadBalancer {
 
     private Server lbServer;
+    private Integer randomNum;
 
     private final ForwardingServlet servlet;
 
@@ -28,10 +30,12 @@ public class LoadBalancer {
     public LoadBalancer(ForwardingServlet servlet, LoadBalancerConfig config) {
         this.servlet = servlet;
         this.config = config;
+        randomNum = new Random().nextInt();
     }
 
     public void start() throws Exception {
-        log.info("Starting Load Balancer");
+        // will print same number as we are using Singleton LoadBalancer instance
+        log.info("Starting Load Balancer: {}", randomNum);
         setDefaultsIfNull();
         ThreadPool threadPool = new ExecutorThreadPool(maxThreads, minThreads);
         lbServer = new Server(threadPool);

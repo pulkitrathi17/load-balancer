@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tech.arvindrachuri.lb.config.LoadBalancerConfig;
@@ -24,12 +24,16 @@ public class LoadBalancerTest {
 
     @Mock private BackendConfiguration backendConfiguration;
 
-    private LoadBalancer loadBalancer;
+    // if we  are manually creating object using mocked objects then we don't need @InjectMocks
+    // annotation
+    @InjectMocks private LoadBalancer loadBalancer;
 
-    @BeforeEach
-    public void setup() {
-        loadBalancer = new LoadBalancer(forwardingServlet, loadBalancerConfig);
-    }
+    // we get a new instance of the loadBalancer object for each test as @InjectMocks creates new
+    // object using mocks before running each test
+    //    @BeforeEach
+    //    public void setup() {
+    //        loadBalancer = new LoadBalancer(forwardingServlet, loadBalancerConfig);
+    //    }
 
     @Test
     public void loadBalancerStartSuccessTest() throws Exception {

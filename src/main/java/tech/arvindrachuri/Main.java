@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import lombok.extern.slf4j.Slf4j;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -18,8 +19,11 @@ public class Main {
 
     public void run(LoadBalancerConfig config) throws Exception {
         Injector injector = Guice.createInjector(new LoadBalancerModule(config));
-        LoadBalancer loadBalancer = injector.getInstance(LoadBalancer.class);
-        loadBalancer.start();
+        LoadBalancer loadBalancer1 = injector.getInstance(LoadBalancer.class);
+        loadBalancer1.start();
+
+        LoadBalancer loadBalancer2 = injector.getInstance(LoadBalancer.class);
+        loadBalancer2.start();
 
         Runtime.getRuntime()
                 .addShutdownHook(
@@ -27,7 +31,8 @@ public class Main {
                                 () -> {
                                     try {
                                         log.info("Running Shutdown hook");
-                                        loadBalancer.stop();
+                                        loadBalancer1.stop();
+                                        loadBalancer2.stop();
                                     } catch (Exception ex) {
                                         log.error("Error occurred during cleanup. Exiting...");
                                     }
@@ -43,7 +48,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         Main app = new Main();
-        LoadBalancerConfig config = app.parseConfig(args[0]);
+        LoadBalancerConfig config = app.parseConfig(Paths.get("").toAbsolutePath() + "/lb.conf");
         app.run(config);
     }
 }

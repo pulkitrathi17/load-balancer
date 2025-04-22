@@ -17,13 +17,14 @@ import tech.arvindrachuri.lb.core.LoadBalancer;
 @Slf4j
 public class Main {
 
-    public void run(LoadBalancerConfig config) throws Exception {
+    public static void run(LoadBalancerConfig config) throws Exception {
         Injector injector = Guice.createInjector(new LoadBalancerModule(config));
         LoadBalancer loadBalancer1 = injector.getInstance(LoadBalancer.class);
         loadBalancer1.start();
 
-        LoadBalancer loadBalancer2 = injector.getInstance(LoadBalancer.class);
-        loadBalancer2.start();
+        // will fail the app startup as scope of LoadBalancer is singleton in LoadBalancerModule
+        //LoadBalancer loadBalancer2 = injector.getInstance(LoadBalancer.class);
+        //loadBalancer2.start();
 
         Runtime.getRuntime()
                 .addShutdownHook(
@@ -32,14 +33,14 @@ public class Main {
                                     try {
                                         log.info("Running Shutdown hook");
                                         loadBalancer1.stop();
-                                        loadBalancer2.stop();
+                                        //loadBalancer2.stop();
                                     } catch (Exception ex) {
                                         log.error("Error occurred during cleanup. Exiting...");
                                     }
                                 }));
     }
 
-    public LoadBalancerConfig parseConfig(String filePath) throws IOException {
+    public static LoadBalancerConfig parseConfig(String filePath) throws IOException {
         Yaml conf = new Yaml(new Constructor(LoadBalancerConfig.class, new LoaderOptions()));
         try (InputStream confStream = new FileInputStream(filePath)) {
             return conf.load(confStream);
@@ -47,8 +48,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        Main app = new Main();
-        LoadBalancerConfig config = app.parseConfig(Paths.get("").toAbsolutePath() + "/lb.conf");
-        app.run(config);
+        LoadBalancerConfig config = parseConfig(Paths.get("").toAbsolutePath() + "/lb.conf");
+        run(config);
     }
 }

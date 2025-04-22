@@ -43,6 +43,8 @@ public class LoadBalancerTest {
 
     @Test
     public void loadBalancerStartFailureTest() throws Exception {
+        // effect of "when" statements written in other tests is removed once that test is over
+        // every test starts from scratch mock object
         when(loadBalancerConfig.getPort()).thenReturn(80085);
         loadBalancer.setMaxThreads(20);
         loadBalancer.setMinThreads(10);
